@@ -295,17 +295,16 @@ class Scene(Container):
         """
         return [getattr(self, key) for key in keys]
 
-    def update_mobjects(self, dt):
-        """
-        Begins updating all mobjects in the Scene.
+    def update_mobjects(self, dt: float):
+        """Update all mobjects in the Scene.
 
         Parameters
         ----------
-        dt: int or float
+        dt
             Change in time between updates. Defaults (mostly) to 1/frames_per_second
         """
         for mobject in self.mobjects:
-            mobject.update(dt)
+            mobject.apply_updaters(dt)
 
     def update_meshes(self, dt):
         for mesh in self.meshes:
@@ -1112,6 +1111,7 @@ class Scene(Container):
         raise Exception("Exiting scene.")
 
     def update_to_time(self, t):
+        print(f"Update to time {t}")
         dt = t - self.last_t
         self.last_t = t
         for animation in self.animations:
@@ -1119,6 +1119,8 @@ class Scene(Container):
             alpha = t / animation.run_time
             animation.interpolate(alpha)
         self.update_mobjects(dt)
+        self.apply_updaters(dt)
+
         self.update_meshes(dt)
 
     def add_sound(self, sound_file, time_offset=0, gain=None, **kwargs):

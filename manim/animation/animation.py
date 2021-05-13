@@ -122,8 +122,10 @@ class Animation:
         suspended during the animation, this will do
         nothing to self.mobject.
         """
+        # if not self.suspend_mobject_updating:
+        #     return
         for mob in self.get_all_mobjects_to_update():
-            mob.update(dt)
+            mob.apply_updaters(dt)
 
     def get_all_mobjects_to_update(self) -> list:
         # The surrounding scene typically handles
