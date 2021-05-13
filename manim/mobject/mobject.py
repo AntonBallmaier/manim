@@ -776,7 +776,7 @@ class Mobject(Container):
         :meth:`remove_updater`
         :class:`~.UpdateFromFunc`
         """
-        super().add_updater(
+        return super().add_updater(
             updater,
             use_time_difference=use_time_difference,
             index=index,
