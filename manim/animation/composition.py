@@ -115,6 +115,10 @@ class Succession(AnimationGroup):
         while self.active_animation is not None:
             self.next_animation()
 
+    def update_mobjects(self, dt: float) -> None:
+        if self.active_animation:
+            self.active_animation.update_mobjects(dt)
+
     def update_active_animation(self, index: int) -> None:
         self.active_index = index
         if index >= len(self.animations):

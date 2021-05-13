@@ -92,6 +92,7 @@ class Transform(Animation):
             self._path_func = path_func
 
     def begin(self) -> None:
+        print("Beginning Transform")
         # Use a copy of target_mobject for the align_data
         # call so that the actual target_mobject stays
         # preserved.

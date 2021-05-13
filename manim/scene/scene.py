@@ -1111,7 +1111,6 @@ class Scene(Container):
         raise Exception("Exiting scene.")
 
     def update_to_time(self, t):
-        print(f"Update to time {t}")
         dt = t - self.last_t
         self.last_t = t
         for animation in self.animations:
