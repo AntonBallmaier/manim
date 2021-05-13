@@ -851,6 +851,28 @@ class Scene(Container):
     def play(self, *args, **kwargs):
         self.renderer.play(self, *args, **kwargs)
 
+    def play_async(self, animation: Animation):
+        self.add_mobjects_from_animations([animation])
+        mobject = animation.mobject
+        # animation.suspend_mobject_updating = False
+        animation.begin()
+
+        def update(scene, dt):
+            run_time = animation.get_run_time()
+            alpha = update.total_time / run_time
+            if alpha >= 1:
+                animation.finish()
+                # animation.clean_up_from_scene(scene)
+                scene.remove_updater(update)
+                return
+            animation.interpolate(alpha)
+            animation.update_mobjects(dt)
+            update.total_time += dt
+
+        update.total_time = 0
+        self.add_updater(update)
+        return self
+
     def wait(self, duration=DEFAULT_WAIT_TIME, stop_condition=None):
         self.play(Wait(run_time=duration, stop_condition=stop_condition))
 
@@ -929,6 +951,7 @@ class Scene(Container):
             isinstance(self.animations[0], Wait)
             and len(self.animations) == 1
             and self.animations[0].is_static_wait
+            and not self.has_time_based_updater()
         )
 
     def play_internal(self, skip_rendering=False):
