@@ -600,9 +600,6 @@ class OpenGLMobject:
                 submob.update(dt, recurse)
         return self
 
-    def get_time_based_updaters(self):
-        return self.time_based_updaters
-
     def has_time_based_updater(self):
         return len(self.time_based_updaters) > 0
 

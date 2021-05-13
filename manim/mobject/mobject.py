@@ -75,6 +75,7 @@ class Mobject(Container):
         self.point_hash = None
         self.submobjects = []
         self.updaters = []
+        self.time_based_updaters = 0
         self.updating_suspended = False
         self.reset_points()
         self.generate_points()
@@ -700,33 +701,11 @@ class Mobject(Container):
         if self.updating_suspended:
             return self
         for updater in self.updaters:
-            parameters = get_parameters(updater)
-            if "dt" in parameters:
-                updater(self, dt)
-            else:
-                updater(self)
+            updater(self, dt)
         if recursive:
             for submob in self.submobjects:
                 submob.update(dt, recursive)
         return self
-
-    def get_time_based_updaters(self) -> List[Updater]:
-        """Return all updaters using the ``dt`` parameter.
-
-        The updaters use this parameter as the input for difference in time.
-
-        Returns
-        -------
-        List[:class:`Callable`]
-            The list of time based updaters.
-
-        See Also
-        --------
-        :meth:`get_updaters`
-        :meth:`has_time_based_updater`
-
-        """
-        return [updater for updater in self.updaters if "dt" in get_parameters(updater)]
 
     def has_time_based_updater(self) -> bool:
         """Test if ``self`` has a time based updater.
@@ -734,17 +713,10 @@ class Mobject(Container):
         Returns
         -------
         class:`bool`
-            ``True`` if at least one updater uses the ``dt`` parameter, ``False`` otherwise.
-
-        See Also
-        --------
-        :meth:`get_time_based_updaters`
+            ``True`` if at least one updater uses a time parameter, ``False`` otherwise.
 
         """
-        for updater in self.updaters:
-            if "dt" in get_parameters(updater):
-                return True
-        return False
+        return bool(self.time_based_updaters)
 
     def get_updaters(self) -> List[Updater]:
         """Return all updaters.
@@ -757,7 +729,6 @@ class Mobject(Container):
         See Also
         --------
         :meth:`add_updater`
-        :meth:`get_time_based_updaters`
 
         """
         return self.updaters
@@ -767,7 +738,9 @@ class Mobject(Container):
 
     def add_updater(
         self,
-        update_function: Updater,
+        updater: Updater,
+        *,
+        use_time_difference: Optional[bool] = None,
         index: Optional[int] = None,
         call_updater: bool = False,
     ) -> "Mobject":
@@ -777,14 +750,18 @@ class Mobject(Container):
 
         Parameters
         ----------
-        update_function
-            The update function to be added.
-            Whenever :meth:`update` is called, this update function gets called using ``self`` as the first parameter.
-            The updater can have a second parameter ``dt``. If it uses this parameter, it gets called using a second value ``dt``, usually representing the time in seconds since the last call of :meth:`update`.
+        updater
+            The update function to be added. Whenever :meth:`update` is called, this
+            updater gets called using ``self`` as the first parameter. The updater can
+            have a second parameter ``dt``. If it uses this parameter, it gets called
+            using a second value ``dt``, usually representing the time in seconds since
+            the last call of :meth:`update`.
         index
-            The index at which the new updater should be added in ``self.updaters``. In case ``index`` is ``None`` the updater will be added at the end.
+            The index at which the new updater should be added in ``self.updaters``. In
+            case ``index`` is ``None`` the updater will be added at the end.
         call_updater
-            Wheather or not to call the updater initially. If ``True``, the updater will be called using ``dt=0``.
+            Wheather or not to call the updater initially. If ``True``, the updater will
+            be called using ``dt=0``.
 
         Returns
         -------
@@ -826,22 +803,51 @@ class Mobject(Container):
         :class:`~.UpdateFromFunc`
         """
 
-        if index is None:
-            self.updaters.append(update_function)
+        # Test if updater is time based and wheather to use time difference
+        parameters = list(get_parameters(updater).keys())
+        time_based = len(parameters) > 1
+        if time_based:
+            if parameters[1] not in ["t", "time"] and use_time_difference is None:
+                use_time_difference = True
+            use_time_difference = bool(use_time_difference)
+
+        # Wrap updaters to allow calling all of them using mobject and dt as parameter
+        if time_based:
+            if use_time_difference:
+                unified_updater = updater
+            else:
+
+                def unified_updater(mob, dt):
+                    unified_updater.total_time += dt
+                    updater(mob, unified_updater.total_time)
+
+                unified_updater.total_time = 0
+
+            self.time_based_updaters += 1
         else:
-            self.updaters.insert(index, update_function)
+            unified_updater = lambda mob, dt: updater(mob)
+
+        unified_updater.time_based = time_based
+        unified_updater.base_func = updater  # used to enable removing
+
+        if index is None:
+            self.updaters.append(unified_updater)
+        else:
+            self.updaters.insert(index, unified_updater)
+
         if call_updater:
-            update_function(self, 0)
+            unified_updater(self, 0)
+
         return self
 
-    def remove_updater(self, update_function: Updater) -> "Mobject":
+    def remove_updater(self, updater: Updater) -> "Mobject":
         """Remove an updater.
 
         If the same updater is applied multiple times, every instance gets removed.
 
         Parameters
         ----------
-        update_function
+        updater
             The update function to be removed.
 
 
@@ -857,8 +863,15 @@ class Mobject(Container):
         :meth:`get_updaters`
 
         """
-        while update_function in self.updaters:
-            self.updaters.remove(update_function)
+
+        filtered = []
+
+        for wrapped_updater in self.updaters:
+            if wrapped_updater.base_func is not updater:
+                filtered.append(wrapped_updater)
+            elif wrapped_updater.time_based:
+                self.time_based_updaters -= 1
+        self.updaters = filtered
         return self
 
     def clear_updaters(self, recursive: bool = True) -> "Mobject":
@@ -882,6 +895,7 @@ class Mobject(Container):
 
         """
         self.updaters = []
+        self.time_based_updaters = 0
         if recursive:
             for submob in self.submobjects:
                 submob.clear_updaters()
