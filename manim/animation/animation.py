@@ -155,7 +155,7 @@ class Animation:
         self,
         submobject: Mobject,
         starting_submobject: Mobject,
-        # target_copy: Mobject, #Todo: fix - signature of interpolate_submobject differes in Transform().
+        # target_copy: Mobject, #Todo: fix - signature of interpolate_submobject difference in Transform().
         alpha: float,
     ) -> "Animation":
         # Typically implemented by subclass

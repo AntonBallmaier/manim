@@ -130,7 +130,7 @@ class FocusOn(Transform):
 
 
 class Indicate(Transform):
-    """Indicate a Mobject by temporaly resizing and recoloring it.
+    """Indicate a Mobject by temporally resizing and recoloring it.
 
     Parameters
     ----------
@@ -141,7 +141,7 @@ class Indicate(Transform):
     color
         The color the mobject temporally takes.
     rate_func
-        The function definig the animation progress at every point in time.
+        The function defining the animation progress at every point in time.
     kwargs : Any
         Additional arguments to be passed to the :class:`~.Succession` constructor
 
@@ -517,9 +517,9 @@ class ApplyWave(Homotopy):
             # This wave is build up as follows:
             # The time is split into 2*ripples phases. In every phase the amplitude
             # either rises to one or goes down to zero. Consecutive ripples will have
-            # their amplitudes in oppising directions (first ripple from 0 to 1 to 0,
+            # their amplitudes in opposing directions (first ripple from 0 to 1 to 0,
             # second from 0 to -1 to 0 and so on). This is how two ripples would be
-            # devided into phases:
+            # divided into phases:
 
             #         ####|####        |            |
             #       ##    |    ##      |            |
@@ -530,7 +530,7 @@ class ApplyWave(Homotopy):
             #             |            |        ####|####
 
             # However, this looks weired in the middle between two ripples. Therefor the
-            # middle phases do acutally use only one appropriately scaled version of the
+            # middle phases do actually use only one appropriately scaled version of the
             # rate like this:
 
             # 1 / 4 Time  | 2 / 4 Time            | 1 / 4 Time
@@ -555,7 +555,7 @@ class ApplyWave(Homotopy):
                 # First rising ripple
                 return wave_func(t * phases)
             elif phase == phases - 1:
-                # last ripple. Rising or falling depening on the number of ripples
+                # last ripple. Rising or falling depending on the number of ripples
                 # The (ripples % 2)-term is used to make this destinction.
                 t -= phase / phases  # Time relative to the phase
                 return (1 - wave_func(t * phases)) * (2 * (ripples % 2) - 1)
@@ -588,7 +588,7 @@ class Wiggle(Animation):
     mobject : Mobject
         The mobject to wiggle.
     scale_value
-        The factor by which the mobject will be temporarilly scaled.
+        The factor by which the mobject will be temporarily scaled.
     rotation_angle
         The wiggle angle.
     n_wiggles
@@ -680,7 +680,7 @@ class Circumscribe(Succession):
     mobject
         The mobject to be circumscribed.
     shape
-        The shape with which to surrond the given mobject. Should be either
+        The shape with which to surround the given mobject. Should be either
         :class:`~.Rectangle` or :class:`~.Circle`
     fade_in
         Whether to make the surrounding shape to fade in. It will be drawn otherwise.

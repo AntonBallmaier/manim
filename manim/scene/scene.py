@@ -1091,7 +1091,7 @@ class Scene(Container):
         )
 
         # Use the locals of the caller as the local namespace
-        # once embeded, and add a few custom shortcuts.
+        # once embedded, and add a few custom shortcuts.
         local_ns = inspect.currentframe().f_back.f_locals
         # local_ns["touch"] = self.interact
         for method in (
