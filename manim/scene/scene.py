@@ -862,7 +862,7 @@ class Scene(Container):
             alpha = update.total_time / run_time
             if alpha >= 1:
                 animation.finish()
-                # animation.clean_up_from_scene(scene)
+                animation.clean_up_from_scene(scene)
                 scene.remove_updater(update)
                 return
             animation.interpolate(alpha)
