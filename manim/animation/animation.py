@@ -7,6 +7,8 @@ __all__ = ["Animation", "Wait"]
 from copy import deepcopy
 from typing import TYPE_CHECKING, Callable, Iterable, Optional, Tuple, Union
 
+import numpy as np
+
 if TYPE_CHECKING:
     from manim.scene.scene import Scene
 
@@ -14,7 +16,7 @@ from .. import logger
 from ..mobject import mobject, opengl_mobject
 from ..mobject.mobject import Mobject
 from ..mobject.opengl_mobject import OpenGLMobject
-from ..utils.deprecation import deprecated
+from ..utils.deprecation import deprecated, deprecated_params
 from ..utils.rate_functions import smooth
 
 DEFAULT_ANIMATION_RUN_TIME: float = 1.0
@@ -22,18 +24,73 @@ DEFAULT_ANIMATION_LAG_RATIO: float = 0.0
 
 
 class Animation:
+    """An animation.
+
+    Animations have a fixed time span.
+
+    Parameters
+    ----------
+    mobject
+        The mobject to be animated. This is not required for all types of animations.
+    lag_ratio
+        Defines the delay after which the animation is applied to submobjects. This lag
+        is relative to the duration of the animation.
+
+        This does not influence the total
+        runtime of the animation. Instead the runtime of individual animations is
+        adjusted so that the complete animation has the defined run time.
+
+    run_time
+        The duration of the animation in seconds.
+    rate_func
+        The function defining the animation progress based on the relative runtime.
+
+        For example ``rate_func(0.5)`` is the proportion of the animation that is done
+        after half of the animations run time.
+    name
+        The name of the animation. This gets displayed while rendering the animation.
+        Defualts to <class-name>(<Mobject-name>).
+    remover
+        Whether the given mobject should be removed from the scene after this animation.
+
+
+    Examples
+    --------
+
+    .. manim:: LagRatios
+
+        class LagRatios(Scene):
+            def construct(self):
+                ratios = [0, 0.1, 0.5, 1, 2]  # demonstrated lag_ratios
+
+                # Create dot groups
+                group = VGroup(*[Dot() for _ in range(4)]).arrange_submobjects()
+                groups = VGroup(*[group.copy() for _ in ratios]).arrange_submobjects(buff=1)
+                self.add(groups)
+
+                # Label groups
+                self.add(Text("lag_ratio = ").scale(0.7).next_to(groups, UP, buff=1.5))
+                for group, ratio in zip(groups, ratios):
+                    self.add(Text(str(ratio)).scale(0.7).next_to(group, UP))
+
+                #Animate groups with different lag_ratios
+                self.play(AnimationGroup(*[
+                    group.animate(lag_ratio=ratio, run_time=1.5).shift(DOWN * 2)
+                    for group, ratio in zip(groups, ratios)
+                ]))
+
+                # lag_ratio also works recursively on nested submobjects:
+                self.play(groups.animate(run_time=1, lag_ratio=0.1).shift(UP * 2))
+
+    """
+
     def __init__(
         self,
-        mobject: Union[Mobject, None],
-        # If lag_ratio is 0, the animation is applied to all submobjects
-        # at the same time
-        # If 1, it is applied to each successively.
-        # If 0 < lag_ratio < 1, its applied to each
-        # with lagged start times
+        mobject: Optional[Mobject],
         lag_ratio: float = DEFAULT_ANIMATION_LAG_RATIO,
         run_time: float = DEFAULT_ANIMATION_RUN_TIME,
         rate_func: Callable[[float], float] = smooth,
-        name: str = None,
+        name: Optional[str] = None,
         remover: bool = False,  # remove a mobject from the screen?
         suspend_mobject_updating: bool = True,
         **kwargs,
@@ -45,6 +102,8 @@ class Animation:
         self.remover: bool = remover
         self.suspend_mobject_updating: bool = suspend_mobject_updating
         self.lag_ratio: float = lag_ratio
+
+        # TODO should there really be empty mobjects?
         self.starting_mobject: Mobject = Mobject()
         self.mobject: Mobject = mobject if mobject is not None else Mobject()
         if kwargs:
@@ -75,10 +134,14 @@ class Animation:
         return str(self)
 
     def begin(self) -> None:
-        # This is called right as an animation is being
-        # played.  As much initialization as possible,
-        # especially any mobject copying, should live in
-        # this method
+        """Begin the animation.
+
+        This method is called right as an animation is being played. As much
+        initialization as possible, especially any mobject copying, should live in this
+        method.
+
+        """
+
         self.starting_mobject = self.create_starting_mobject()
         if self.suspend_mobject_updating:
             # All calls to self.mobject's internal updaters
@@ -91,8 +154,16 @@ class Animation:
         self.interpolate(0)
 
     def finish(self) -> None:
+        # TODO: begin and finish should require a scene as parameter.
+        # That way Animation.clean_up_from_screen and Scene.add_mobjects_from_animations
+        # could be removed as they fulfill basically the same purpose.
+        """Finish the animation.
+
+        This method gets called when the animation is over.
+
+        """
         self.interpolate(1)
-        if self.suspend_mobject_updating and self.mobject is not None:
+        if self.suspend_mobject_updating:
             self.mobject.resume_updating()
 
     def clean_up_from_scene(self, scene: "Scene") -> None:
@@ -138,7 +209,7 @@ class Animation:
 
     # Methods for interpolation, the mean of an Animation
     def interpolate(self, alpha: float) -> None:
-        alpha = min(max(alpha, 0), 1)
+        alpha = np.clip(alpha, 0, 1)
         self.interpolate_mobject(self.rate_func(alpha))
 
     @deprecated(until="v0.6.0", replacement="interpolate")
