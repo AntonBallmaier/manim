@@ -21,7 +21,7 @@ from colour import Color
 
 from .. import config
 from ..constants import *
-from ..container import Container
+from ..container import Updatable
 from ..utils.color import (
     BLACK,
     WHITE,
@@ -46,7 +46,7 @@ Updater = Union[Callable[["Mobject"], None], Callable[["Mobject", float], None]]
 T = TypeVar("T", bound="Mobject")
 
 
-class Mobject(Container):
+class Mobject(Updatable):
     """Mathematical Object: base class for objects that can be displayed on screen.
 
     There is a compatibility layer that allows for
@@ -95,7 +95,7 @@ class Mobject(Container):
         self.init_gl_points()
         self.init_gl_colors()
 
-        Container.__init__(self, **kwargs)
+        Updatable.__init__(self, **kwargs)
 
     def init_gl_data(self):
         pass

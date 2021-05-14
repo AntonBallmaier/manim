@@ -1,18 +1,6 @@
 import pytest
 
-from manim import Container, Mobject, Scene, tempconfig
-
-
-def test_ABC():
-    """Test that the Container class cannot be instantiated."""
-    with pytest.raises(TypeError):
-        Container()
-
-    # The following should work without raising exceptions
-    Mobject()
-
-    with tempconfig({"dry_run": True}):
-        Scene()
+from manim import Mobject, Scene, tempconfig
 
 
 def container_add(obj, get_submobjects):

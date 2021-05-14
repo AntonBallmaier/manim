@@ -1,10 +1,13 @@
-"""
-Abstract base class for several objects used by manim.  In particular, both
-:class:`~.Scene` and :class:`~.Mobject` inherit from Container.
+"""Abstract base class for updatable objects.
+
+Updater functions can be attached to Updatables. These get called for every frame of an
+animation. 
+
+In particular, both :class:`~.Scene` and :class:`~.Mobject` inherit from Updatable.
 """
 
 
-__all__ = ["Container"]
+__all__ = ["Updatable"]
 
 
 from abc import ABC, abstractmethod
@@ -13,22 +16,28 @@ from typing import Callable, List, Optional, Union
 from .utils.simple_functions import get_parameters
 from . import logger
 
-Updater = Union[Callable[["Container"], None], Callable[["Container", float], None]]
+Updater = Union[Callable[["Updatable"], None], Callable[["Updatable", float], None]]
 
 
-class Container(ABC):
-    """Abstract base class for several objects used by manim.  In particular, both
-    :class:`~.Scene` and :class:`~.Mobject` inherit from Container.
+class Updatable(ABC):
+    """Abstract base class for updatable objects.
+
+    Updater functions can be attached to Updatables. These get called for every frame of
+    an animation.
+
+    In particular, both :class:`~.Scene` and :class:`~.Mobject` inherit from Updatable.
 
     Parameters
     ----------
     kwargs : Any
+        Unused kwargs passed from subclass constructors. They are logged as debug
+        message.
 
     """
 
     def __init__(self, **kwargs):
         if kwargs:
-            logger.debug("Container received extra kwargs: %s", kwargs)
+            logger.debug("Updatable received extra kwargs: %s", kwargs)
 
         if hasattr(self, "CONFIG"):
             logger.error(
@@ -38,26 +47,6 @@ class Container(ABC):
         self.updaters = []
         self.time_based_updaters = 0
 
-    @abstractmethod
-    def add(self, *items):
-        """Abstract method to add items to Container.
-
-        Parameters
-        ----------
-        items : Any
-            Objects to be added.
-        """
-
-    @abstractmethod
-    def remove(self, *items):
-        """Abstract method to remove items from Container.
-
-        Parameters
-        ----------
-        items : Any
-            Objects to be added.
-        """
-
     def add_updater(
         self,
         updater: Updater,
@@ -65,11 +54,11 @@ class Container(ABC):
         use_time_difference: Optional[bool] = None,
         index: Optional[int] = None,
         call_updater: bool = False,
-    ) -> "Container":
-        """Add an update function to this container.
+    ) -> "Updatable":
+        """Add an update function to this updatable.
 
         Update functions, or updaters in short, are functions that are applied to the
-        Container in every frame.
+        Updatable in every frame.
 
         Parameters
         ----------
@@ -88,7 +77,7 @@ class Container(ABC):
 
         Returns
         -------
-        :class:`Container`
+        :class:`Updatable`
             ``self``
 
         See also
@@ -105,7 +94,7 @@ class Container(ABC):
                 use_time_difference = True
             use_time_difference = bool(use_time_difference)
 
-        # Wrap updaters to allow calling all of them using container and dt as parameter
+        # Wrap updaters to allow calling all of them using updatable and dt as parameter
         if time_based:
             if use_time_difference:
                 unified_updater = updater
@@ -134,12 +123,12 @@ class Container(ABC):
 
         return self
 
-    def clear_updaters(self) -> "Container":
+    def clear_updaters(self) -> "Updatable":
         """Remove every updater.
 
         Returns
         -------
-        :class:`Container`
+        :class:`Updatable`
             ``self``
 
         See also
@@ -153,7 +142,7 @@ class Container(ABC):
         self.time_based_updaters = 0
         return self
 
-    def remove_updater(self, updater: Updater) -> "Container":
+    def remove_updater(self, updater: Updater) -> "Updatable":
         """Remove an updater.
 
         If the same updater is applied multiple times, every instance gets removed.
@@ -166,7 +155,7 @@ class Container(ABC):
 
         Returns
         -------
-        :class:`Container`
+        :class:`Updatable`
             ``self``
 
         See also
@@ -213,7 +202,7 @@ class Container(ABC):
         """
         return bool(self.time_based_updaters)
 
-    def apply_updaters(self, dt: float = 0) -> "Container":
+    def apply_updaters(self, dt: float = 0) -> "Updatable":
         """Apply all updaters.
 
         Parameters
@@ -224,7 +213,7 @@ class Container(ABC):
 
         Returns
         -------
-        :class:`Container`
+        :class:`Updatable`
             ``self``
 
         See Also
