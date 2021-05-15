@@ -588,7 +588,7 @@ class OpenGLMobject:
         self.has_updaters = False
         self.updating_suspended = False
 
-    def update(self, dt=0, recurse=True):
+    def apply_updaters(self, dt=0, recurse=True):
         if not self.has_updaters or self.updating_suspended:
             return self
         for updater in self.time_based_updaters:
@@ -597,7 +597,7 @@ class OpenGLMobject:
             updater(self)
         if recurse:
             for submob in self.submobjects:
-                submob.update(dt, recurse)
+                submob.apply_updaters(dt, recurse)
         return self
 
     def has_time_based_updater(self):
@@ -622,7 +622,7 @@ class OpenGLMobject:
 
         self.refresh_has_updater_status()
         if call_updater:
-            self.update()
+            self.apply_updaters()
         return self
 
     def remove_updater(self, update_function):
@@ -662,7 +662,7 @@ class OpenGLMobject:
         for parent in self.parents:
             parent.resume_updating(recurse=False, call_updater=False)
         if call_updater:
-            self.update(dt=0, recurse=recurse)
+            self.apply_updaters(dt=0, recurse=recurse)
         return self
 
     def refresh_has_updater_status(self):
