@@ -111,7 +111,7 @@ class CairoRenderer:
         )
 
         # Save a static image, to avoid rendering non moving objects.
-        self.static_image = self.save_static_frame_data(scene, scene.static_mobjects)
+        self.save_static_frame_data(scene)
 
         self.file_writer.begin_animation(not self.skip_animations)
         scene.begin_animations()
@@ -222,9 +222,7 @@ class CairoRenderer:
         self.update_frame(ignore_skipping=True)
         self.camera.get_image().show()
 
-    def save_static_frame_data(
-        self, scene, static_mobjects: typing.Iterable[Mobject]
-    ) -> typing.Iterable[Mobject]:
+    def save_static_frame_data(self, scene):
         """Compute and save the static frame, that will be reused at each frame to avoid to unecesseraly computer
         static mobjects.
 
@@ -240,12 +238,12 @@ class CairoRenderer:
         typing.Iterable[Mobject]
             the static image computed.
         """
+        static_mobjects = scene.static_mobjects
         if not static_mobjects:
             self.static_image = None
             return
         self.update_frame(scene, mobjects=static_mobjects)
         self.static_image = self.get_frame()
-        return self.static_image
 
     def update_skipping_status(self):
         """
